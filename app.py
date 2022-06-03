@@ -3,7 +3,8 @@
 #----------------------------------------------------------------------------#
 
 import json
-import dateutil.parser
+import sys
+import dateutil.parser as parser
 import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
@@ -44,10 +45,10 @@ class Venue(db.Model):
     genres = db.Column(db.String())
     facebook_link = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
-    website_link = db.Column(db.String(120))
+    website = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(500))
-    venue = db.relationship('Show', backref='venue', cascade='all, delete-orphan', lazy=True)
+    shows = db.relationship('Show', backref='venues', cascade='all, delete-orphan', lazy=True)
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -62,10 +63,10 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     facebook_link = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
-    website_link = db.Column(db.String(120))
+    website = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(500))
-    venue = db.relationship('Show', backref='artist', cascade='all, delete-orphan', lazy=True )
+    shows = db.relationship('Show', backref='artists', cascade='all, delete-orphan', lazy=True )
 
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
@@ -74,10 +75,9 @@ class Artist(db.Model):
 class Show(db.Model):
     __tablename__ = 'Show'
     id = db.Column(db.Integer(), primary_key=True)
-    venues = db.Column(db.Integer(), db.ForeignKey('Venue.id'), nullable=False)
-    artists = db.Column(db.Integer(), db.ForeignKey('Artist.id'), nullable=False)
+    venue_id = db.Column(db.Integer(), db.ForeignKey('Venue.id'), nullable=False)
+    artist_id = db.Column(db.Integer(), db.ForeignKey('Artist.id'), nullable=False)
     show_time = db.Column(db.DateTime, nullable=False)
-
 
 
 
@@ -86,7 +86,7 @@ class Show(db.Model):
 #----------------------------------------------------------------------------#
 
 def format_datetime(value, format='medium'):
-  date = dateutil.parser.parse(value)
+  date = parser.parse(value)
   if format == 'full':
       format="EEEE MMMM, d, y 'at' h:mma"
   elif format == 'medium':
@@ -106,34 +106,58 @@ def index():
 
 #  Venues
 #  ----------------------------------------------------------------
-
 @app.route('/venues')
 def venues():
   # TODO: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
 
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
-  return render_template('pages/venues.html', areas=data);
+  my_data = []
+  # Get Location Data
+  location = db.session.query(Venue.state, Venue.city).all()
+
+  for l in location:
+    locations = {
+      'state': l.state,
+      'city': l.city,
+      'venues': [],
+    }
+
+    if locations not in my_data:
+      my_data.append(locations)
+  
+  # Get locations.venues data
+  venue = db.session.query(Venue.id, Venue.name, Venue.city).all()
+
+  for v in venue:
+    venue_obj = {
+      'id': v.id,
+      'name': v.name,
+      'num_upcoming_shows': 0 
+    }
+#Get upcoming shows
+    upcoming_shows = Show.query.filter_by(venue_id=v.id).all()
+    shows = []
+    for i in upcoming_shows:
+      up_shows = {
+        'id':i.venue_id,
+        'start_time':i.show_time
+      }
+      shows.append(up_shows)
+
+    num_of_upcoming_shows = 0
+
+    for i in shows:
+      if i['id'] == v.id and i['start_time'] > datetime.now():
+        num_of_upcoming_shows += 1
+    venue_obj['num_upcoming_shows'] = num_of_upcoming_shows
+  
+    for data in my_data:
+      if data['city'] == v.city:
+        data['venues'].append(venue_obj)
+  return render_template('pages/venues.html', areas=my_data);
+
+
+
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -246,13 +270,36 @@ def create_venue_form():
 def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
-
-  # on successful db insert, flash success
-  flash('Venue ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
+    new_venue = VenueForm(request.form)
+    try:
+        venue = Venue(
+          name=new_venue.name.data,
+          state=new_venue.state.data,
+          city=new_venue.city.data,
+          address=new_venue.address.data,
+          phone=new_venue.phone.data,
+          genres=new_venue.genres.data,
+          image_link=new_venue.image_link.data,
+          facebook_link=new_venue.facebook_link.data,
+          website_link=new_venue.website_link.data,
+          seeking_talent=new_venue.seeking_talent.data,
+          seeking_description=new_venue.seeking_description.data
+        )
+        db.session.add(venue)
+        # on successful db insert, flash success
+        flash('Venue ' + request.form['name'] + ' was successfully listed!')
+    except:
+        db.session.rollback()
+        print(sys.exc_info())
+        # TODO: on unsuccessful db insert, flash an error instead.
+        flash('Venue ' + request.form['name'] + ' could not be listed.')
+    finally:
+      db.session.close()
+    return redirect(url_for('index'))
+  
+  
   # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
   # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
