@@ -6,7 +6,7 @@ import json
 import sys
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, abort, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -157,8 +157,6 @@ def venues():
   return render_template('pages/venues.html', areas=my_data);
 
 
-
-
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
@@ -294,10 +292,24 @@ def create_venue_submission():
 def delete_venue(venue_id):
   # TODO: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+  error = False
+  venue = Venue.query.filter_by(id=venue_id)
+  try:
+    db.session.delete(venue_id)
+    db.session.commit()
+    flash('Successfully deleted {}'.format(venue.name))
 
+  except:
+    error = True
+    db.session.rollback()
+    flash('Error deleting {}'.format(venue.name))
+  finally:
+    if error:
+      abort(400)
+    else:
   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
-  return None
+      return None
 
 #  Artists
 #  ----------------------------------------------------------------
