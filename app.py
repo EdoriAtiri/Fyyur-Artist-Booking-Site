@@ -269,11 +269,12 @@ def create_venue_submission():
           genres=new_venue.genres.data,
           image_link=new_venue.image_link.data,
           facebook_link=new_venue.facebook_link.data,
-          website_link=new_venue.website_link.data,
+          website=new_venue.website_link.data,
           seeking_talent=new_venue.seeking_talent.data,
           seeking_description=new_venue.seeking_description.data
         )
         db.session.add(venue)
+        db.session.commit()
         # on successful db insert, flash success
         flash('Venue ' + request.form['name'] + ' was successfully listed!')
     except:
@@ -283,7 +284,7 @@ def create_venue_submission():
         flash('Venue ' + request.form['name'] + ' could not be listed.')
     finally:
       db.session.close()
-    return redirect(url_for('index'))
+    return redirect(url_for('venues'))
   
   
   # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
@@ -471,11 +472,35 @@ def create_artist_submission():
   # called upon submitting the new artist listing form
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
-
-  # on successful db insert, flash success
-  flash('Artist ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
+  form = ArtistForm(request.form)
+  try:
+      artist = Artist(
+          name=form.name.data,
+          state=form.state.data,
+          city=form.city.data,
+          phone=form.phone.data,
+          genres=form.genres.data,
+          image_link=form.image_link.data,
+          facebook_link=form.facebook_link.data,
+          website=form.website_link.data,
+          seeking_venue=form.seeking_venue.data,
+          seeking_description=form.seeking_description.data
+        )
+      db.session.add(artist)
+      db.session.commit()
+      # on successful db insert, flash success
+      flash('Artist ' + request.form['name'] + ' was successfully listed!')
+  except:
+      db.session.rollback()
+      print(sys.exc_info())
+       # TODO: on unsuccessful db insert, flash an error instead.
   # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+      flash('Artist ' + request.form['name'] + ' could not be listed.')
+  finally:
+      db.session.close()
+  return redirect(url_for('artists'))
+ 
+  
   return render_template('pages/home.html')
 
 
@@ -486,42 +511,35 @@ def create_artist_submission():
 def shows():
   # displays list of shows at /shows
   # TODO: replace with real venues data.
-  data=[{
-    "venue_id": 1,
-    "venue_name": "The Musical Hop",
-    "artist_id": 4,
-    "artist_name": "Guns N Petals",
-    "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    "start_time": "2019-05-21T21:30:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 5,
-    "artist_name": "Matt Quevedo",
-    "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-    "start_time": "2019-06-15T23:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-01T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-08T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-15T20:00:00.000Z"
-  }]
+  shows = db.session.query(Show).all()
+  
+  data = []
+  for show in shows:
+    result = {
+    "venue_id": show.venues.id,
+    "venue_name": show.venues.name,
+    "artist_id": show.artists.id,
+    "artist_name": show.artists.name,
+    "artist_image_link": show.artists.image_link,
+    "start_time": show.show_time.strftime("%m/%d/%Y, %H:%M:%S")
+    }
+    data.append(result)
+  
+  
+  # for show in shows:
+  #   artist = Artist.query.filter_by(id=show.artist_id)
+  #   venue = Venue.query.filter_by(id=show.venue_id)
+    
+  #   result = {
+  #   "venue_id": venue[0].id,
+  #   "venue_name": venue[0].name,
+  #   "artist_id": artist[0].id,
+  #   "artist_name": artist[0].name,
+  #   "artist_image_link": artist[0].image_link,
+  #   "start_time": show.show_time.strftime("%m/%d/%Y, %H:%M:%S")
+  #   }
+  #   data.append(result)
+   
   return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
@@ -534,13 +552,29 @@ def create_shows():
 def create_show_submission():
   # called to create new shows in the db, upon submitting new show listing form
   # TODO: insert form data as a new Show record in the db, instead
+  artist_id = request.form.get('artist_id')
+  venue_id = request.form.get('venue_id')
+  show_time = request.form.get('start_time')
 
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+  try:
+    show = Show(
+      artist_id=artist_id,
+      venue_id=venue_id,
+      show_time=show_time
+    )
+    db.session.add(show)
+    db.session.commit()
+      # on successful db insert, flash success
+    flash('Show was successfully listed!')
+  except:
+     db.session.rollback()
+     print(sys.exc_info())
+       # TODO: on unsuccessful db insert, flash an error instead.
+  # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+     flash('An error occurred. Show could not be listed.')
+  finally:
+      db.session.close()
+  return redirect(url_for('shows'))
 
 @app.errorhandler(404)
 def not_found_error(error):
