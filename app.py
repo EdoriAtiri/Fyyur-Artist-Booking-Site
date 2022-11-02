@@ -391,6 +391,7 @@ def show_artist(artist_id):
           upcoming.append(result)
 
   for artist in query:
+    print(artist.genres.split(","))
     result = {
     "id": artist.id,
     "name": artist.name,
