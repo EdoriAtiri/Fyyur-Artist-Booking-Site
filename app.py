@@ -79,7 +79,7 @@ class Show(db.Model):
     artist_id = db.Column(db.Integer(), db.ForeignKey('Artist.id'), nullable=False)
     show_time = db.Column(db.DateTime, nullable=False)
 
-
+db.create_all()
 
 #----------------------------------------------------------------------------#
 # Filters.
