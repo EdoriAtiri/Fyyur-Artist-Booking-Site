@@ -225,7 +225,7 @@ def show_venue(venue_id):
     result = {
     "id": v.id,
     "name": v.name,
-    "genres": v.genres.split(','),
+    "genres": v.genres.replace("{", "").replace("}", "").replace('"', "").split(','),
     "address": v.address,
     "city": v.city,
     "state": v.state,
@@ -390,12 +390,11 @@ def show_artist(artist_id):
           }
           upcoming.append(result)
 
-  for artist in query:
-    print(artist.genres.split(","))
+  for artist in query:   
     result = {
     "id": artist.id,
     "name": artist.name,
-    "genres": artist.genres.split(','),
+    "genres": artist.genres.replace("{", "").replace("}", "").split(','),
     "city": artist.city,
     "state": artist.state,
     "phone": artist.phone,
