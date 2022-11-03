@@ -29,7 +29,6 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 
-# TODO: connect to a local postgresql database
 
 # ----------------------------------------------------------------------------#
 # Models.
@@ -53,7 +52,6 @@ class Venue(db.Model):
     shows = db.relationship('Show', backref='venues',
                             cascade='all, delete-orphan', lazy=True)
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
 class Artist(db.Model):
@@ -73,9 +71,6 @@ class Artist(db.Model):
     shows = db.relationship('Show', backref='artists',
                             cascade='all, delete-orphan', lazy=True)
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
 
 class Show(db.Model):
@@ -87,13 +82,14 @@ class Show(db.Model):
         'Artist.id'), nullable=False)
     show_time = db.Column(db.DateTime, nullable=False)
 
+# Creates tables in db from the above models
 # db.create_all()
 
 # ----------------------------------------------------------------------------#
 # Filters.
 # ----------------------------------------------------------------------------#
 
-
+# Datetime formatter
 def format_datetime(value, format='medium'):
     date = dateutil.parser.parse(value)
     if format == 'full':
@@ -109,7 +105,6 @@ app.jinja_env.filters['datetime'] = format_datetime
 # Controllers.
 # ----------------------------------------------------------------------------#
 
-
 @app.route('/')
 def index():
     return render_template('pages/home.html')
@@ -119,8 +114,6 @@ def index():
 #  ----------------------------------------------------------------
 @app.route('/venues')
 def venues():
-    # TODO: replace with real venues data.
-    #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
 
     my_data = []
     # Get Location Data
@@ -170,9 +163,7 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
-    # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-    # seach for Hop should return "The Musical Hop".
-    # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
+    # Search on artists with partial string search. Ensure it is case-insensitive.
     search_term = request.form.get('search_term', '')
     venue = Venue.query.filter(Venue.name.ilike('%' + search_term + '%')).all()
 
@@ -200,7 +191,6 @@ def search_venues():
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
     # shows the venue page with the given venue_id
-    # TODO: replace with real venue data from the venues table, using venue_id
     my_data = []
     upcoming = []
     past = []
@@ -268,8 +258,8 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
+    # insert form data as a new Venue record in the db, instead
+    # modify data to be the data object returned from db insertion
     new_venue = VenueForm(request.form)
     try:
         venue = Venue(
@@ -301,8 +291,8 @@ def create_venue_submission():
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
-    # TODO: Complete this endpoint for taking a venue_id, and using
-    # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+    # this endpoint takes a venue_id, and uses
+    # SQLAlchemy ORM to delete a record. Handles cases where the session commit could fail.
     error = False
     venue = Venue.query.filter_by(id=venue_id)
     try:
@@ -318,17 +308,14 @@ def delete_venue(venue_id):
         if error:
             abort(400)
         else:
-            # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-            # clicking that button delete it from the db then redirect the user to the homepage
             return None
 
 #  Artists
 #  ----------------------------------------------------------------
 
-
+# Gets all artists data
 @app.route('/artists')
 def artists():
-    # TODO: replace with real data returned from querying the database
     data = []
     query_artists = db.session.query(Artist.id, Artist.name).all()
 
@@ -343,9 +330,7 @@ def artists():
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-    # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-    # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
-    # search for "band" should return "The Wild Sax Band".
+    # search artists with partial string search. 
 
     search_term = request.form.get('search_term', '')
     artist = Artist.query.filter(
@@ -372,11 +357,10 @@ def search_artists():
     return render_template('pages/search_artists.html', results=response, search_term=search_term)
 
 
+    # shows the artist page with the given artist_id
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-    # shows the artist page with the given artist_id
-    # TODO: replace with real artist data from the artist table, using artist_id
-
+  
     my_data = []
     upcoming = []
     past = []
@@ -432,9 +416,9 @@ def show_artist(artist_id):
 
     return render_template('pages/show_artist.html', artist=my_data[0])
 
-#  Update
-#  ----------------------------------------------------------------
 
+#  Update artists and venue information
+#  ----------------------------------------------------------------
 
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
@@ -455,13 +439,13 @@ def edit_artist(artist_id):
         "image_link": query.image_link,
     }
 
-    # TODO: populate form with fields from artist with ID <artist_id>
+   # populates form with fields from artist with ID <artist_id>
     return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-    # TODO: take values from the form submitted, and update existing
+    #  takes values from the form submitted, and updates existing
     # artist record with ID <artist_id> using the new attributes
     form = ArtistForm(request.form)
     try:
@@ -484,14 +468,14 @@ def edit_artist_submission(artist_id):
     except:
         db.session.rollback()
         print(sys.exc_info())
-        # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+       #unsuccessful db insert, flash an error instead.
         flash('Artist ' + request.form['name'] + ' could not be updated.')
     finally:
         db.session.close()
     return redirect(url_for('show_artist', artist_id=artist_id))
 
 
+# Route to edit venue data
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
     form = VenueForm()
@@ -511,13 +495,13 @@ def edit_venue(venue_id):
         "seeking_description": query.seeking_description,
         "image_link": query.image_link,
     }
-    # TODO: populate form with values from venue with ID <venue_id>
+   # populates form with values from venue with ID <venue_id>
     return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
-    # TODO: take values from the form submitted, and update existing
+    # takes values from the form submitted, and updates existing
     # venue record with ID <venue_id> using the new attributes
     venue = VenueForm(request.form)
     try:
@@ -541,7 +525,7 @@ def edit_venue_submission(venue_id):
     except:
         db.session.rollback()
         print(sys.exc_info())
-        # TODO: on unsuccessful db insert, flash an error instead.
+        # on unsuccessful db insert, flash an error instead.
         flash('Venue ' + request.form['name'] + ' could not be updated.')
     finally:
         db.session.close()
@@ -560,8 +544,8 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
     # called upon submitting the new artist listing form
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
+    #  inserts form data as a new Venue record in the db, instead
+    #  modifies data to be the data object returned from db insertion
     form = ArtistForm(request.form)
     try:
         artist = Artist(
@@ -583,8 +567,7 @@ def create_artist_submission():
     except:
         db.session.rollback()
         print(sys.exc_info())
-        # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+        # on unsuccessful db insert, flash an error instead.
         flash('Artist ' + request.form['name'] + ' could not be listed.')
     finally:
         db.session.close()
@@ -599,7 +582,6 @@ def create_artist_submission():
 @app.route('/shows')
 def shows():
     # displays list of shows at /shows
-    # TODO: replace with real venues data.
     shows = db.session.query(Show).all()
 
     data = []
@@ -613,20 +595,6 @@ def shows():
             "start_time": show.show_time.strftime("%m/%d/%Y, %H:%M:%S")
         }
         data.append(result)
-
-    # for show in shows:
-    #   artist = Artist.query.filter_by(id=show.artist_id)
-    #   venue = Venue.query.filter_by(id=show.venue_id)
-
-    #   result = {
-    #   "venue_id": venue[0].id,
-    #   "venue_name": venue[0].name,
-    #   "artist_id": artist[0].id,
-    #   "artist_name": artist[0].name,
-    #   "artist_image_link": artist[0].image_link,
-    #   "start_time": show.show_time.strftime("%m/%d/%Y, %H:%M:%S")
-    #   }
-    #   data.append(result)
 
     return render_template('pages/shows.html', shows=data)
 
