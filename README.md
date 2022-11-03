@@ -8,7 +8,7 @@ An Artist and Venue Booking Site
 
 ![Fyyur screenshot](./assets/Fyyur-SS.png)
 
-Fyyur is a full stack web application built as part of udacity's full stack web development curriculum. Fyuur is a musical venue and artist booking site that facilitates the discovery and bookings of shows between local performing artists and venues. This site lets you list new artists and venues, discover them, and list shows with artists as a venue owner.
+Fyyur is a full stack web application built as part of udacity's full stack web development curriculum. Fyyur is a musical venue and artist booking site that facilitates the discovery and bookings of shows between local performing artists and venues. This site lets you list new artists and venues, discover them, and list shows with artists as a venue owner.
 
 ## Tech Stack (Dependencies)
 
